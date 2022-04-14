@@ -4,7 +4,31 @@
 #include "ray.hpp"
 #include "vec3.hpp"
 
+bool hit_sphere(const point3& center, double radius, const ray& r) {
+    // We're looking to solve (P(t) - C)(P(t) - C) = r^2
+    // This expands to:
+    //   b * b * t^2 + 2 * (A - C) * b  * t + (A - C) * (A - C) * r^2 = 0
+    //
+    // We can then use the determinant of the quadratric to check if the
+    // ray hits the sphere.
+    //
+    // oc = (A - C)
+    vec3 oc = r.origin() - center;
+    // a = b * b
+    auto a = dot(r.direction(), r.direction());
+    // b = 2 * b * (A - C) = 2 * b * oc
+    auto b = 2.0 * dot(oc, r.direction());
+    // c = (A - C) * (A - C) - r^2 = oc * oc - r^2
+    auto c = dot(oc, oc) - radius * radius;
+    // \Delta = b^2 - 4 * a * c
+    auto discriminant = b * b - 4.0 * a * c;
+    return (discriminant > 0);
+}
+
 color ray_color(const ray& r) {
+    if (hit_sphere(point3(0, 0, -1), 0.5, r)) {
+        return color(1, 0, 0);
+    }
     vec3 unit_direction = unit_vector(r.direction());
     auto t = 0.5 * (unit_direction.y() + 1.0);
     return (1.0 - t) * color(1.0, 1.0, 1.0) + (t) * color(0.5, 0.7, 1.0);
