@@ -5,6 +5,7 @@ project(Raytracing VERSION 0.1)
 add_executable(
     raytracing
     src/color.hpp
+    src/ray.hpp
     src/vec3.hpp
     src/main.cpp)
 
