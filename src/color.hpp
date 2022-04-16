@@ -10,9 +10,9 @@ void write_color(std::ostream &out, color pixel_color, int samples_per_pixel) {
     auto b = pixel_color.z();
 
     auto scale = 1.0 / samples_per_pixel;
-    r *= scale;
-    g *= scale;
-    b *= scale;
+    r = std::sqrt(scale * r);
+    g = std::sqrt(scale * g);
+    b = std::sqrt(scale * b);
 
     // Output the pixel color in range [0, 255]
     out << static_cast<int>(256 * clamp(r, 0.0, 0.999)) << " "
