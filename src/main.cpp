@@ -1,3 +1,4 @@
+#include <fstream>
 #include <iostream>
 
 #include "rtweekend.hpp"
@@ -5,6 +6,7 @@
 #include "camera.hpp"
 #include "color.hpp"
 #include "hittable_list.hpp"
+#include "material.hpp"
 #include "sphere.hpp"
 
 color ray_color(const ray& r, const hittable& world, int depth) {
@@ -15,8 +17,13 @@ color ray_color(const ray& r, const hittable& world, int depth) {
     }
 
     if (world.hit(r, 0.001, infinity, rec)) {
-        point3 target = rec.p + rec.normal + random_unit_vector();
-        return 0.5 * ray_color(ray(rec.p, target - rec.p), world, depth-1);
+        ray scattered;
+        color attentuation;
+        if (rec.mat_ptr->scatter(r, rec, attentuation, scattered)) {
+            return attentuation * ray_color(scattered, world, depth - 1);
+        } else {
+            return color(0, 0, 0);
+        }
     }
     
     vec3 unit_direction = unit_vector(r.direction());
@@ -27,20 +34,29 @@ color ray_color(const ray& r, const hittable& world, int depth) {
 
 int main()
 {
+    std::ofstream fout("img.ppm");
+
     // Handle scene size based on aspect ratio instead of fixed values
     const auto aspect_ratio = 16.0 / 10.0;
     const int image_width = 400;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
     const int samples_per_pixel = 100;
-    const int max_depth = 20;
+    const int max_depth = 50;
 
     hittable_list world;
-    world.add(std::make_shared<sphere>(point3(0, 0, -1), 0.5));
-    world.add(std::make_shared<sphere>(point3(0, -100.5, -1), 100));
+    auto material_ground = std::make_shared<lambertian>(color(0.8, 0.8, 0.0));
+    auto material_center = std::make_shared<lambertian>(color(0.7, 0.3, 0.3));
+    auto material_left   = std::make_shared<metal>(color(0.8, 0.8, 0.8));
+    auto material_right  = std::make_shared<metal>(color(0.8, 0.6, 0.2));
+
+    world.add(std::make_shared<sphere>(point3( 0.0, -100.5, -1.0), 100.0, material_ground));
+    world.add(std::make_shared<sphere>(point3( 0.0,    0.0, -1.0),   0.5, material_center));
+    world.add(std::make_shared<sphere>(point3(-1.0,    0.0, -1.0),   0.5, material_left));
+    world.add(std::make_shared<sphere>(point3( 1.0,    0.0, -1.0),   0.5, material_right));
 
     camera cam;
 
-    std::cout << "P3\n" << image_width << " " << image_height << "\n255\n";
+    fout << "P3\n" << image_width << " " << image_height << "\n255\n";
 
     for (int y = image_height - 1; y >= 0; --y) {
         std::cerr << "\rScanlines remaining: " << y << " " << std::flush;
@@ -52,10 +68,11 @@ int main()
                 ray r = cam.get_ray(u, v);
                 pixel_color += ray_color(r, world, max_depth);
             }
-        write_color(std::cout, pixel_color, samples_per_pixel);
+        write_color(fout, pixel_color, samples_per_pixel);
         }
     }
 
+    fout.close();
     std::cerr << "All done!\n";
 
     return 0;

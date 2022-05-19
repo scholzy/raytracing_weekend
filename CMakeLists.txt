@@ -9,6 +9,7 @@ add_executable(
     src/color.hpp
     src/hittable.hpp
     src/hittable_list.hpp
+    src/material.hpp
     src/ray.hpp
     src/sphere.hpp
     src/vec3.hpp
